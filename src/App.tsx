@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Wordle } from './Wordle.tsx';
 
 function App() {
-  const [word, setWord] = useState('beast');
+  const [word, setWord] = useState('cacas');
 
   return (
     <>

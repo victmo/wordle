@@ -1,14 +1,22 @@
 import './Wordle.css';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 const keyboardRows = ['qwertyuiop', 'asdfghjkl', 'zxcvbnm'];
 const alphabet = keyboardRows.join('');
 
+type LetterStatus = 'correct' | 'misplaced' | 'wrong' | 'empty';
+type GuessedLetters = Map<string, LetterStatus>;
+type GuessedWord = [string, LetterStatus][];
+
 export type WordleProps = {
   /** Five letter word/solution */
   word: string;
+
+  /** Length of the words */
   length: number;
+
+  /** Max number of attempts */
   attempts: number;
 };
 
@@ -18,10 +26,48 @@ export type WordleProps = {
 
 export const Wordle = (props: WordleProps) => {
   const { word, length, attempts } = props;
-  const [guesses, setGuesses] = useState<string[]>([]);
+  const [guesses, setGuesses] = useState<GuessedWord[]>([]);
   const [currentValue, setCurrentValue] = useState('');
   const [isGameOver, setIsGameOver] = useState(false);
   const [isWin, setIsWin] = useState(false);
+
+  const submitGuess = useCallback(
+    (guess: string) => {
+      if (guess.length !== length) {
+        return;
+      }
+
+      const result: GuessedWord = [];
+      const w = word.split('');
+
+      for (let i = 0; i < length; i++) {
+        const letter = guess[i];
+        const index = w.indexOf(letter);
+
+        if (index === -1) {
+          result[i] = [letter, 'wrong'];
+        } else {
+          result[i] = [letter, index === i ? 'correct' : 'misplaced'];
+          w[index] = ''; // Prevent double counting
+        }
+      }
+
+      const newGuesses = [...guesses, result];
+      const won = guess === word;
+      const over = won || newGuesses.length >= attempts;
+
+      setGuesses(newGuesses);
+      setIsWin(won);
+      setIsGameOver(over);
+      setCurrentValue('');
+    },
+    [attempts, guesses, length, word]
+  );
+
+  const toEmptyGuessedWord = useCallback((s: string): GuessedWord => {
+    const letters = s.split('').map(letter => [letter, 'empty'] as [string, LetterStatus]);
+    return letters;
+  }, []);
 
   // Handle (virtual and physical) key presses
   const handleKeyPress = useCallback(
@@ -29,29 +75,15 @@ export const Wordle = (props: WordleProps) => {
       const letter = key.toLowerCase();
 
       if (key === 'Enter') {
-        if (currentValue.length !== length) {
-          return;
-        }
-        setGuesses([...guesses, currentValue]);
-        setCurrentValue('');
+        submitGuess(currentValue);
       } else if (key === 'Backspace') {
         setCurrentValue(currentValue.slice(0, -1));
       } else if (alphabet.includes(letter) && currentValue.length < length) {
         setCurrentValue(currentValue + letter);
       }
     },
-    [currentValue, guesses, length]
+    [currentValue, length, submitGuess]
   );
-
-  // Sync game state
-  useEffect(() => {
-    const won = guesses.includes(word);
-    setIsWin(won);
-
-    if (guesses.length >= attempts || won) {
-      setIsGameOver(true);
-    }
-  }, [guesses, word, attempts]);
 
   // Add keyboard listener
   useEffect(() => {
@@ -64,17 +96,31 @@ export const Wordle = (props: WordleProps) => {
     return () => window.removeEventListener('keydown', listener);
   }, [isGameOver, currentValue, guesses, handleKeyPress]);
 
+  // Derive keyboard state from guesses
+  const guessedLetters = useMemo<GuessedLetters>(() => {
+    const map = new Map<string, LetterStatus>();
+    for (const guess of guesses) {
+      for (const [letter, status] of guess) {
+        if (map.get(letter) === 'correct') {
+          continue; // Already correct, can't do better
+        }
+        map.set(letter, status);
+      }
+    }
+    return map;
+  }, [guesses]);
+
   return (
     <div>
-      <h2>Hint: {word}</h2>
+      <h2>
+        Hint: {word} {isWin && '🎉'}
+      </h2>
       <div className="board">
         {Array.from({ length: attempts }).map((_, i) => (
           <Line
             key={i}
             length={length}
-            word={word}
-            complete={i < guesses.length}
-            value={i === guesses.length ? currentValue : guesses[i]}
+            letters={i === guesses.length ? toEmptyGuessedWord(currentValue) : guesses[i]}
           />
         ))}
       </div>
@@ -82,13 +128,7 @@ export const Wordle = (props: WordleProps) => {
       <Keyboard
         rows={keyboardRows}
         onKeyPress={isGameOver ? undefined : handleKeyPress}
-        guessedLetters={
-          new Map([
-            ['a', 'misplaced'],
-            ['b', 'correct'],
-            ['e', 'wrong'],
-          ])
-        }
+        guessedLetters={guessedLetters}
       />
     </div>
   );
@@ -96,34 +136,20 @@ export const Wordle = (props: WordleProps) => {
 
 type LineProps = {
   length: number;
-  word: string;
-  value?: string;
-  complete?: boolean;
+  letters: GuessedWord;
 };
 export const Line = (props: LineProps) => {
-  const { length, word, value = '', complete = false } = props;
+  const { length, letters } = props;
 
   const tiles = [];
 
   for (let i = 0; i < length; i++) {
-    const letter = value[i] || '';
-    let status: TileProps['status'] = 'empty';
-    if (complete) {
-      if (letter === word[i]) {
-        status = 'correct';
-      } else if (word.includes(letter)) {
-        status = 'misplaced';
-      } else {
-        status = 'wrong';
-      }
-    }
+    const [letter, status] = ((letters || [])[i] || ['', 'empty']) as GuessedWord[number];
     tiles[i] = <Tile key={i} value={letter} status={status} />;
   }
 
   return <div className="line">{tiles}</div>;
 };
-
-type LetterStatus = 'correct' | 'misplaced' | 'wrong' | 'empty';
 
 type TileProps = {
   value: string;
@@ -137,7 +163,7 @@ export const Tile = (props: TileProps) => {
 
 type KeyboardProps = {
   rows: string[];
-  guessedLetters: Map<string, LetterStatus>;
+  guessedLetters: GuessedLetters;
   onKeyPress?: (key: string) => void;
 };
 
