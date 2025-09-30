@@ -75,3 +75,8 @@
 .key.empty {
   background-color: rgba(128,128,128, 0.8);
 }
+
+.key.enter {
+  font-size: 0.7em;
+  order: -1;
+}
