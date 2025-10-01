@@ -2,7 +2,7 @@ import './Wordle.css';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-const keyboardRows = ['qwertyuiop', 'asdfghjkl', 'zxcvbnm'];
+const keyboardRows = ['qwertyuiop', 'asdfghjkl', 'zxcvbnm']; // qwerty layout
 const alphabet = keyboardRows.join('');
 
 type LetterStatus = 'correct' | 'misplaced' | 'wrong' | 'empty';
@@ -111,10 +111,7 @@ export const Wordle = (props: WordleProps) => {
   }, [guesses]);
 
   return (
-    <div>
-      <h2>
-        Hint: {word} {isWin && '🎉'}
-      </h2>
+    <div className="wordle">
       <div className="board">
         {Array.from({ length: attempts }).map((_, i) => (
           <Line
@@ -136,15 +133,15 @@ export const Wordle = (props: WordleProps) => {
 
 type LineProps = {
   length: number;
-  letters: GuessedWord;
+  letters?: GuessedWord;
 };
 export const Line = (props: LineProps) => {
-  const { length, letters } = props;
+  const { length, letters = [] } = props;
 
   const tiles = [];
 
   for (let i = 0; i < length; i++) {
-    const [letter, status] = ((letters || [])[i] || ['', 'empty']) as GuessedWord[number];
+    const [letter, status] = (letters[i] || ['', 'empty']) as GuessedWord[number];
     tiles[i] = <Tile key={i} value={letter} status={status} />;
   }
 
@@ -193,7 +190,7 @@ export const Keyboard = (props: KeyboardProps) => {
                 className="key empty enter"
                 onClick={() => onKeyPress?.('Enter')}
               >
-                Enter
+                <span>Enter</span>
               </button>
 
               <button
@@ -201,7 +198,7 @@ export const Keyboard = (props: KeyboardProps) => {
                 className="key empty backspace"
                 onClick={() => onKeyPress?.('Backspace')}
               >
-                ⌫
+                <span>⌫</span>
               </button>
             </>
           )}

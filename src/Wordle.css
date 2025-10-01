@@ -1,3 +1,11 @@
+.wordle {
+  width: 24em;
+  user-select: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
 .board {
   display: flex;
   flex-direction: column;
@@ -7,7 +15,7 @@
 
 .line {
   display: flex;
-  gap: 0.3em;
+  gap: 0.4em;
 }
 
 
@@ -17,9 +25,10 @@
   align-items: center;
   width: 2.2em;
   height: 2.2em;
-  border: 1px solid;
   text-transform: uppercase;
-  font-size: 1.1em;;
+  font-size: 1.3em;
+  font-weight: 800;
+  border: 2px solid transparent;
 }
 
 .tile.correct {
@@ -36,6 +45,8 @@
 
 .tile.empty {
   background-color: transparent;
+  border: 2px solid currentColor;
+  border-color: color-mix(in srgb, currentColor 50%, transparent);
 }
 
 
@@ -43,21 +54,27 @@
   margin-top: 1em;
   display: flex;
   flex-direction: column;
-  gap: 0.25em;
+  gap: 0.3em;
 }
 
 .keyboard-row {
   display: flex;
-  gap: 0.25em;
-  /* justify-content: center; */
+  gap: 0.3em;
+  justify-content: center;
 }
 
 .key {
+  display: flex;
+  justify-content: center;
+  align-items: center;
   font-size: 1em;
   text-transform: uppercase;
+  font-weight: 600;
   border: none;
-  border-radius: 0.25em;
-  padding: 0.8em 0.6em;
+  border-radius: 0.3em;
+  padding: 0.8em 0;
+  width: 2em;
+  cursor: pointer;
 }
 
 .key.correct {
@@ -77,6 +94,13 @@
 }
 
 .key.enter {
-  font-size: 0.7em;
   order: -1;
+  width: 3.5em;
+}
+.key.enter span {
+  font-size: 0.6em;
+}
+
+.key.backspace {
+  width: 3.5em;
 }

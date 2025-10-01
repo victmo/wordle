@@ -3,11 +3,10 @@ import { useState } from 'react';
 import { Wordle } from './Wordle.tsx';
 
 function App() {
-  const [word, setWord] = useState('cacas');
+  const [word, setWord] = useState('geese');
 
   return (
     <>
-      <h1>Wordle</h1>
       <Wordle word={word} length={5} attempts={6} />
     </>
   );
